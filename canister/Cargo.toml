@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 ic-cdk = "0.14.0"
+ic-wasi-polyfill = { git = "https://github.com/wasm-forge/ic-wasi-polyfill", version = "0.4.1" }
 candid = { workspace = true }
+rquickjs = { workspace = true }
 
 [lib]
 crate-type = ["cdylib"]

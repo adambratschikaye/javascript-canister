@@ -13,6 +13,7 @@ rquickjs = "0.6.2"
 [dependencies]
 candid = { workspace = true }
 rquickjs = { workspace = true }
+walrus = "0.20.3"
 
 [dev-dependencies]
 pocket-ic = "3.1.0"
