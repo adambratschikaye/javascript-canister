@@ -53,16 +53,12 @@ fn run_canister() {
     let canister_id = pic.create_canister();
     pic.add_cycles(canister_id, 2_000_000_000_000);
 
-    pic.install_canister(canister_id, wasm_with_exports, vec![], None);
-    let result = pic
-        .update_call(
-            canister_id,
-            Principal::anonymous(),
-            "load_js",
-            Encode!(&names, &js).unwrap(),
-        )
-        .expect("Failed to call canister");
-    unwrap_reply(result);
+    pic.install_canister(
+        canister_id,
+        wasm_with_exports,
+        Encode!(&names, &js).unwrap(),
+        None,
+    );
 
     let result = pic
         .update_call(

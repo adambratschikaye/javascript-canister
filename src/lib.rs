@@ -18,10 +18,12 @@ pub fn add_exports(names: &[String], wasm: &[u8]) -> Vec<u8> {
     let config = ModuleConfig::new();
     let mut module = config.parse(wasm).unwrap();
     let main_export = module.exports.iter().find(|e| e.name == "call_js").unwrap();
+    let main_export_id = main_export.id();
     let main_id = match main_export.item {
         walrus::ExportItem::Function(id) => id,
         _ => panic!("'call_js' is not a function."),
     };
+    module.exports.delete(main_export_id);
     for (index, name) in names.into_iter().enumerate() {
         let mut func = FunctionBuilder::new(&mut module.types, &[], &[]);
         let instructions = [

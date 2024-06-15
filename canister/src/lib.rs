@@ -6,12 +6,6 @@ thread_local! {
     static JS: RefCell<Option<(Vec<String>, Runtime, Context)>> = RefCell::new(None);
 }
 
-#[ic_cdk::init]
-fn init() {
-    ic_wasi_polyfill::init(&[0u8; 32], &[]);
-}
-
-#[ic_cdk::update]
 fn load_js(names: Vec<String>, js: String) {
     let runtime = Runtime::new().unwrap();
     let context = Context::full(&runtime).unwrap();
@@ -21,6 +15,12 @@ fn load_js(names: Vec<String>, js: String) {
     JS.with(|js| {
         *js.borrow_mut() = Some((names, runtime, context));
     })
+}
+
+#[ic_cdk::init]
+fn init(names: Vec<String>, js: String) {
+    ic_wasi_polyfill::init(&[0u8; 32], &[]);
+    load_js(names, js);
 }
 
 #[no_mangle]
