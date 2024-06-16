@@ -1,8 +1,11 @@
+use std::process::Command;
+
 use rquickjs::{Context, Runtime};
 use walrus::{
     ir::{Call, Const, Instr, Value},
     ExportItem, FunctionBuilder, ModuleConfig,
 };
+use wizer::Wizer;
 
 pub fn list_functions(javascript: &str) -> Vec<String> {
     let runtime = Runtime::new().unwrap();
@@ -12,6 +15,16 @@ pub fn list_functions(javascript: &str) -> Vec<String> {
         let global = ctx.globals();
         global.keys::<String>().collect::<Result<_, _>>().unwrap()
     })
+}
+
+pub fn pre_initialize(wasm: &[u8], js: &str, names: &[String]) -> Vec<u8> {
+    std::fs::write("names.txt", names.join("\n")).unwrap();
+    std::fs::write("code.js", js).unwrap();
+    let mut wizer = Wizer::new();
+    wizer.wasm_bulk_memory(true);
+    wizer.allow_wasi(true).unwrap();
+    wizer.dir(".");
+    wizer.run(wasm).unwrap()
 }
 
 pub fn add_exports(names: &[String], wasm: &[u8]) -> Vec<u8> {
@@ -44,4 +57,10 @@ pub fn add_exports(names: &[String], wasm: &[u8]) -> Vec<u8> {
         );
     }
     module.emit_wasm()
+}
+
+pub fn run_wasi2ic(src_path: &str, output_path: &str) {
+    let mut command = Command::new("wasi2ic");
+    command.arg(src_path).arg(output_path);
+    command.output().unwrap();
 }

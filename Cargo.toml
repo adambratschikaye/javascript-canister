@@ -11,8 +11,10 @@ candid = "0.10.8"
 rquickjs = "0.6.2"
 
 [dependencies]
+anyhow = "1.0.86"
 candid = { workspace = true }
 rquickjs = { workspace = true }
+wizer = "6.0.0"
 walrus = "0.20.3"
 
 [dev-dependencies]

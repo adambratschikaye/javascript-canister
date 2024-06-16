@@ -1,3 +1,6 @@
 /target
 pocket-ic
 canister.wasm
+canister_wasi.wasm
+code.js
+names.txt

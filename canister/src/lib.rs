@@ -1,4 +1,4 @@
-use candid::{Decode, Encode};
+use candid::{encode_one, Decode};
 use rquickjs::{Context, Function, Runtime};
 use std::cell::RefCell;
 
@@ -6,7 +6,11 @@ thread_local! {
     static JS: RefCell<Option<(Vec<String>, Runtime, Context)>> = RefCell::new(None);
 }
 
-fn load_js(names: Vec<String>, js: String) {
+#[export_name = "wizer.initialize"]
+fn pre_initialize() {
+    let name_contents = std::fs::read_to_string("names.txt").unwrap();
+    let names: Vec<_> = name_contents.lines().map(|l| l.to_string()).collect();
+    let js = std::fs::read_to_string("code.js").unwrap();
     let runtime = Runtime::new().unwrap();
     let context = Context::full(&runtime).unwrap();
     context.with(|ctx| {
@@ -18,9 +22,8 @@ fn load_js(names: Vec<String>, js: String) {
 }
 
 #[ic_cdk::init]
-fn init(names: Vec<String>, js: String) {
+fn init() {
     ic_wasi_polyfill::init(&[0u8; 32], &[]);
-    load_js(names, js);
 }
 
 #[no_mangle]
@@ -40,7 +43,7 @@ fn call_js(index: usize) {
             result
         });
 
-        let response = Encode!(&js_result).unwrap();
+        let response = encode_one(js_result).unwrap();
         ic_cdk::api::call::reply_raw(&response);
     })
 }
