@@ -7,7 +7,9 @@ use walrus::{
 };
 use wizer::Wizer;
 
-pub fn list_functions(javascript: &str) -> Vec<String> {
+const CANISTER_WASM: &[u8] = include_bytes!("../target/wasm32-wasi/release/canister.wasm");
+
+fn list_functions(javascript: &str) -> Vec<String> {
     let runtime = Runtime::new().unwrap();
     let context = Context::full(&runtime).unwrap();
     context.with(|ctx| {
@@ -17,7 +19,7 @@ pub fn list_functions(javascript: &str) -> Vec<String> {
     })
 }
 
-pub fn pre_initialize(wasm: &[u8], js: &str, names: &[String]) -> Vec<u8> {
+fn pre_initialize(wasm: &[u8], js: &str, names: &[String]) -> Vec<u8> {
     std::fs::write("names.txt", names.join("\n")).unwrap();
     std::fs::write("code.js", js).unwrap();
     let mut wizer = Wizer::new();
@@ -27,7 +29,7 @@ pub fn pre_initialize(wasm: &[u8], js: &str, names: &[String]) -> Vec<u8> {
     wizer.run(wasm).unwrap()
 }
 
-pub fn add_exports(names: &[String], wasm: &[u8]) -> Vec<u8> {
+fn add_exports(names: &[String], wasm: &[u8]) -> Vec<u8> {
     let config = ModuleConfig::new();
     let mut module = config.parse(wasm).unwrap();
     let main_export = module.exports.iter().find(|e| e.name == "call_js").unwrap();
@@ -59,8 +61,35 @@ pub fn add_exports(names: &[String], wasm: &[u8]) -> Vec<u8> {
     module.emit_wasm()
 }
 
-pub fn run_wasi2ic(src_path: &str, output_path: &str) {
+fn run_wasi2ic(src_path: &str, output_path: &str) {
     let mut command = Command::new("wasi2ic");
     command.arg(src_path).arg(output_path);
     command.output().unwrap();
+}
+
+pub fn build(js: &str) -> Vec<u8> {
+    let names = list_functions(js);
+    let pre_initialized = pre_initialize(CANISTER_WASM, js, &names);
+    let wasm_with_exports = add_exports(&names, &pre_initialized);
+    let wasi_path = "canister_wasi.wasm";
+    let ic_path = "canister.wasm";
+    std::fs::write(wasi_path, wasm_with_exports).unwrap();
+    run_wasi2ic(wasi_path, ic_path);
+    std::fs::read(ic_path).unwrap()
+}
+
+#[test]
+fn test_analyze() {
+    let js = r#"
+        function hello(s) {
+            let result = "hello "
+            return result.concat(s)
+        }
+        function caps(s) {
+            return s.toUpperCase()
+        }
+        function bar() {}
+    "#;
+    let functions = list_functions(js);
+    assert_eq!(functions, vec!["hello", "caps", "bar"]);
 }
