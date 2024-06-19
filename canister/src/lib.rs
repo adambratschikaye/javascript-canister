@@ -8,14 +8,15 @@ thread_local! {
 
 #[export_name = "wizer.initialize"]
 fn pre_initialize() {
-    let name_contents = std::fs::read_to_string("names.txt").unwrap();
-    let names: Vec<_> = name_contents.lines().map(|l| l.to_string()).collect();
     let js = std::fs::read_to_string("code.js").unwrap();
     let runtime = Runtime::new().unwrap();
     let context = Context::full(&runtime).unwrap();
-    context.with(|ctx| {
+    let names: Vec<String> = context.with(|ctx| {
         ctx.eval::<(), _>(js).unwrap();
+        let global = ctx.globals();
+        global.keys::<String>().collect::<Result<_, _>>().unwrap()
     });
+    std::fs::write("names.txt", names.join("\n")).unwrap();
     JS.with(|js| {
         *js.borrow_mut() = Some((names, runtime, context));
     })
